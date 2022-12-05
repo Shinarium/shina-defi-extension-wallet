@@ -88,7 +88,7 @@
                     <div class="fast">{{$t("webwallet_fast")}}</div>
                   </li>
                   <li class="token">
-                    <div class="input">{{transfer.fee.toFixed(6)}} ONE</div>
+                    <div class="input">{{transfer.fee.toFixed(6)}} SHINA</div>
                   </li>
                 </ul>
                 <!-- 高级设置 -->
@@ -102,7 +102,7 @@
                     <input type="text" placeholder="0" v-model="transfer.gasLimit" />
                   </li>
                   <li class="token">
-                    <div class="input">{{feeCompute.toFixed(6)}} ONE</div>
+                    <div class="input">{{feeCompute.toFixed(6)}} SHINA</div>
                   </li>
                 </ul>
               </div>
@@ -132,24 +132,24 @@ import login from "base/login";
 import sideBar from "base/sidebar";
 import common from "static/js/common.js";
 import BigNumber from "static/js/bignumber.mjs";
-import { HarmonyExtension } from "@harmony-js/core";
+import { ShinaDeFiExtensionWallet } from "@shinarium-js/core";
 import {
   ChainType,
   hexToNumber,
   Unit,
   isValidAddress
-} from "@harmony-js/utils";
-import { fromBech32, getAddress } from "@harmony-js/crypto";
+} from "@shinarium-js/utils";
+import { fromBech32, getAddress } from "@shinarium-js/crypto";
 export default {
   data() {
     return {
       url: "", // 用于初始化的rpcUrl
-      blockchain: "Harmony",
+      blockchain: "Shinarium",
       account: "",
       transfer: {
         account: "",
         amount: 0,
-        token: "ONE",
+        token: "SHINA",
         fee: 0.00042,
         gasPrice: "20",
         gasLimit: 21000,
@@ -158,7 +158,7 @@ export default {
       fromShard: 0,
       toShard: 0,
       unit: this.webCoin.unit,
-      harmonyExt: undefined,
+      shinariumExt: undefined,
       // 增加chainId属性
       chainId: 1,
       loadingBalance: false,
@@ -186,7 +186,7 @@ export default {
       },
       timer: "",
       shardArray: [], // 用于存储拉取到的分片信息
-      nodes: this.globalData.harmony.nodes,
+      nodes: this.globalData.shinarium.nodes,
       explorerLink: {
         address: "",
         txOnShard: "",
@@ -264,8 +264,8 @@ export default {
       return arr.join("");
     },
     getAccount() {
-      if (this.webUtil.getCookie("identity_harmony")) {
-        this.account = JSON.parse(this.webUtil.getCookie("identity_harmony"));
+      if (this.webUtil.getCookie("identity_shinarium")) {
+        this.account = JSON.parse(this.webUtil.getCookie("identity_shinarium"));
         this.initExtension();
         // this.timerFunc();
       }
@@ -289,16 +289,12 @@ export default {
         ? getAddress(this.account).bech32
         : "";
       switch (name) {
-        case "Harmony": {
-          basic = "https://explorer.harmony.one/#";
+        case_study "Shinarium": {
+          basic = "https://explorer.shinarium.com/#";
           break;
         }
-        case "Pangaea": {
-          basic = "https://explorer.pangaea.harmony.one/#";
-          break;
-        }
-        case "Harmony Testnet": {
-          basic = "https://explorer.beta.harmony.one/#";
+        case "Shinarium Testnet": {
+          basic = "https://explorer.testnet.shinarium.com/#";
           break;
         }
         case "Local": {
@@ -345,7 +341,7 @@ export default {
       };
     },
     dropdownToken() {
-      this.values.push("ONE");
+      this.values.push("SHINA");
     },
     getFromShard(param) {
       this.fromShard = param;
@@ -395,32 +391,32 @@ export default {
         // 读取config里面每个node的chainId，
         // 并写入chainId属性
         this.chainId = JSON.parse(shard).chainId;
-        let hexAddress = fromBech32(this.account, "one");
-        // 使用HarmonyExtension进行初始化
+        let hexAddress = fromBech32(this.account, "shina");
+        // 使用ShinaDeFiExtensionWallet进行初始化
         // 第二个参数为Object, {chainId:number,chainType:string,chainUrl:string}
         // 这里不使用chainUrl是因为每次切换shard都会刷新一次，干脆在后面使用setProvider
         // 这里传入对应的chainId
-        this.harmonyExt = new HarmonyExtension(window.harmony, {
+        this.shinariumExt = new ShinaDeFiExtensionWallet(window.shinarium, {
           chainId: this.chainId
         });
-        let harmony = this.harmonyExt;
-        harmony.setProvider(this.url);
+        let shinarium = this.shinariumExt;
+        shinarium.setProvider(this.url);
         // 刷新balance：true
         this.loadingBalance = true;
-        harmony.blockchain
+        shinarium.blockchain
           .getShardingStructure()
           .then(res => {
             if (res.result) {
               // 设置分片信息
-              harmony.shardingStructures(res.result);
+              shinarium.shardingStructures(res.result);
               // 存储分片信息 用于页面展示
               this.shardArray = res.result;
-              this.fromShard = harmony.messenger.currentShard;
+              this.fromShard = shinarium.messenger.currentShard;
               this.getShard();
               this.getExplorerLink();
               // 获取余额
               let id = parseInt(this.fromShard);
-              harmony.blockchain
+              shinarium.blockchain
                 .getBalance({
                   address: hexAddress,
                   blockNumber: "latest",
@@ -430,7 +426,7 @@ export default {
                   let result = response.result;
                   let balance = new BigNumber(hexToNumber(result) + "");
                   balance = balance.div(Math.pow(10, this.decimal)).toFixed();
-                  this.$set(this.balances.list, "ONE", balance);
+                  this.$set(this.balances.list, "SHINA", balance);
                   this.balances.sum = balance;
                   // 刷新balance：false
                   this.loadingBalance = false;
@@ -459,12 +455,12 @@ export default {
     },
     // 更新余额
     balanceUpdate() {
-      let hexAddress = fromBech32(this.account, "one");
-      let harmony = this.harmonyExt;
+      let hexAddress = fromBech32(this.account, "shina");
+      let shinarium = this.shinariumExt;
       // 这里也不需要再次设置shardingStructure了
       this.loadingBalance = true;
       let id = parseInt(this.fromShard);
-      harmony.blockchain
+      shinarium.blockchain
         .getBalance({
           address: hexAddress,
           blockNumber: "latest",
@@ -474,8 +470,8 @@ export default {
           let result = response.result;
           let balance = new BigNumber(hexToNumber(result) + "");
           balance = balance.div(Math.pow(10, this.decimal)).toFixed();
-          if (this.balances.list.ONE != balance) {
-            this.$set(this.balances.list, "ONE", balance);
+          if (this.balances.list.SHINA != balance) {
+            this.$set(this.balances.list, "SHINA", balance);
             this.balances.sum = balance;
           }
           this.loadingBalance = false;
@@ -492,9 +488,9 @@ export default {
         });
     },
     async getCoinPrice() {
-      // 获取ONE代币人民币价格
+      // 获取SHINA代币人民币价格
       await this.webUtil
-        .getTokenPrice(this.globalData.domain, "ONE", "1001")
+        .getTokenPrice(this.globalData.domain, "SHINA", "1001")
         .then(res => {
           this.coin.cny = parseFloat(res.last2Rmb);
           // 获取汇率
@@ -536,7 +532,7 @@ export default {
     //   }
     //   // 判断转账数量
     //   if (parseFloat(this.transfer.amount) >= parseFloat(this.balances.sum)) {
-    //     this.$alert(this.$t("webwallet_harmony_amount_notenough"));
+    //     this.$alert(this.$t("webwallet_shinarium_amount_notenough"));
     //     return false;
     //   }
     //
@@ -560,15 +556,15 @@ export default {
     //   let data = this.stringToHex(this.transfer.input);
     //
     //   // 判断插件是否存在
-    //   if (!window.harmony || !this.harmonyExt.extensionType === null) {
+    //   if (!window.shinarium || !this.shinariumExt.extensionType === null) {
     //     this.$alert(this.$t("noMathExtension"));
     //     return false;
     //   }
     //
-    //   let harmony = this.harmonyExt;
+    //   let shinarium = this.shinariumExt;
     //   // 这里也不需要再次设置shardingStructure了
     //   // 调用登陆函数
-    //   harmony.wallet.getAccount().then(res => {
+    //   shinarium.wallet.getAccount().then(res => {
     //     let account = res.address;
     //
     //     //判断插件选择账户和当前账户是否一致
@@ -595,9 +591,9 @@ export default {
     //     console.log(this.gasPrice);
     //     return false;
     //
-    //     let txn = harmony.transactions.newTx(transactionObj, true);
+    //     let txn = shinarium.transactions.newTx(transactionObj, true);
     //
-    //     harmony.wallet
+    //     shinarium.wallet
     //       .signTransaction(txn, true)
     //       .then(signed => {
     //         // 发送交易
@@ -663,7 +659,7 @@ export default {
       }
       // 判断转账数量
       if (parseFloat(this.transfer.amount) >= parseFloat(this.balances.sum)) {
-        this.$alert(this.$t("webwallet_harmony_amount_notenough"));
+        this.$alert(this.$t("webwallet_shinarium_amount_notenough"));
         return false;
       }
       // 计算gasPrice
@@ -684,13 +680,13 @@ export default {
       // 处理data
       let data = this.stringToHex(this.transfer.input);
       // 判断插件是否存在
-      if (!window.harmony || !this.harmonyExt.extensionType === null) {
+      if (!window.shinarium || !this.shinariumExt.extensionType === null) {
         this.$alert(this.$t("noMathExtension"));
         return false;
       }
-      let harmony = this.harmonyExt;
+      let shinarium = this.shinariumExt;
       // 调用登陆函数
-      harmony.wallet.getAccount().then(res => {
+      shinarium.wallet.getAccount().then(res => {
         let account = res.address;
         //判断插件选择账户和当前账户是否一致
         if (account != this.account) {
@@ -710,8 +706,8 @@ export default {
           gasPrice: new Unit(this.gasPrice).asEther().toWei().toString(),
           data: data
         };
-        let txn = harmony.transactions.newTx(transactionObj, true);
-        harmony.wallet
+        let txn = shinarium.transactions.newTx(transactionObj, true);
+        shinarium.wallet
           .signTransaction(txn, true)
           .then(signed => {
             // 发送交易
